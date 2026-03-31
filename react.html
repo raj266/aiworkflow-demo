@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ReAct – Travel Advisor (Real Weather)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9edf2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            color: #1e3c72;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header p {
+            color: #4a627a;
+            margin-top: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .card-content {
+            padding: 2rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 600;
+            color: #1e3c72;
+            font-size: 0.9rem;
+        }
+
+        input, select {
+            padding: 0.75rem;
+            border: 1px solid #d0dae8;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.9rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .result-area {
+            margin-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1.5rem;
+        }
+
+        .result-card {
+            background: #f0f9ff;
+            border-left: 5px solid #3b82f6;
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .step {
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.75rem;
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #1e40af;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+        }
+
+        .step-content {
+            white-space: pre-wrap;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            color: #1e293b;
+        }
+
+        .final-card {
+            background: #e6f7e6;
+            border-left-color: #28a745;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .meta-info {
+            font-size: 0.85rem;
+            color: #5b6e8c;
+            text-align: right;
+            margin-top: 1rem;
+            padding-top: 0.5rem;
+        }
+
+        .error {
+            background: #fee2e2;
+            border-left-color: #ef4444;
+            color: #b91c1c;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: #6c7a91;
+        }
+
+        @media (max-width: 640px) {
+            .card-content {
+                padding: 1.5rem;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>
+            <span>🌀</span> ReAct <span style="font-size: 1.5rem;">|</span> <span>🌍</span>
+        </h1>
+        <p>Reason → Act (real weather) → Observe → Final packing advice</p>
+    </div>
+
+    <div class="card">
+        <div class="card-content">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>📍 Destination</label>
+                    <input type="text" id="destination" placeholder="e.g., Goa, Manali, Udaipur" value="Goa">
+                </div>
+                <div class="form-group">
+                    <label>🗓️ Month / Season</label>
+                    <select id="month">
+                        <option>January</option><option>February</option><option>March</option>
+                        <option>April</option><option>May</option><option>June</option>
+                        <option>July</option><option>August</option><option>September</option>
+                        <option>October</option><option>November</option><option>December</option>
+                    </select>
+                </div>
+            </div>
+            <button id="runBtn">
+                <span>🌀</span> Plan My Trip (ReAct)
+            </button>
+
+            <div id="resultContainer" class="result-area">
+                <!-- dynamic content -->
+            </div>
+        </div>
+    </div>
+    <footer>
+        Agentic AI • ReAct (Hospitality) • Real weather data via Open‑Meteo
+    </footer>
+</div>
+
+<script>
+    const API_URL = " https://ai-react-j37u.onrender.com/react";  // Replace with your actual Render URL
+
+    async function runReAct() {
+        const destination = document.getElementById('destination').value.trim();
+        const month = document.getElementById('month').value;
+        if (!destination) {
+            alert("Please enter a destination.");
+            return;
+        }
+
+        const resultDiv = document.getElementById('resultContainer');
+        resultDiv.innerHTML = `
+            <div class="result-card" style="text-align: center;">
+                <div class="loader" style="margin-bottom: 0.5rem;"></div>
+                <strong>Reasoning with ReAct...</strong><br>
+                <span style="font-size: 0.9rem;">Thinking → Getting real weather → Advising</span>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ destination, month })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Server error (${response.status}): ${errorText.slice(0, 100)}`);
+            }
+
+            const data = await response.json();
+
+            let html = `<div class="result-card final-card">
+                            <strong>✅ Final Advice</strong><br>
+                            <div class="step-content" style="margin-top: 0.5rem;">${escapeHtml(data.final_answer)}</div>
+                        </div>`;
+            html += `<div class="meta-info">⏱️ Total time: ${data.elapsed_time.toFixed(2)} seconds</div>`;
+            html += `<div><strong>📋 ReAct Steps:</strong></div>`;
+            data.steps.forEach(step => {
+                html += `<div class="step">
+                            <div class="step-title">${escapeHtml(step.step)}</div>
+                            <div class="step-content">${escapeHtml(step.output)}</div>
+                         </div>`;
+            });
+            resultDiv.innerHTML = html;
+        } catch (error) {
+            console.error(error);
+            resultDiv.innerHTML = `<div class="result-card error"><strong>❌ Error</strong><br>${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    document.getElementById('runBtn').addEventListener('click', runReAct);
+</script>
+</body>
+</html>
