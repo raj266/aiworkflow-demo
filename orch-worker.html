@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Orchestrator-Worker – Travel Planner</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui; background: linear-gradient(135deg, #f5f7fa 0%, #e9edf2 100%); min-height: 100vh; padding: 2rem 1rem; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 2rem; }
+        .header h1 { font-size: 2.2rem; color: #1e3c72; display: inline-flex; align-items: center; gap: 0.75rem; }
+        .card { background: white; border-radius: 24px; padding: 2rem; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 1.5rem; }
+        label { font-weight: 600; display: block; margin-bottom: 0.5rem; color: #1e3c72; }
+        textarea { width: 100%; padding: 0.75rem; border: 1px solid #d0dae8; border-radius: 12px; font-family: inherit; font-size: 0.95rem; }
+        button { background: #3b82f6; color: white; border: none; padding: 0.9rem 2rem; border-radius: 40px; cursor: pointer; font-weight: 600; margin-top: 0.5rem; }
+        .result-area { margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; }
+        .result-card { background: #f0f9ff; border-left: 5px solid #3b82f6; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.5rem; }
+        .step { margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem; }
+        .step-title { font-weight: 700; font-size: 0.9rem; color: #1e40af; margin-bottom: 0.25rem; text-transform: uppercase; }
+        .step-content { white-space: pre-wrap; line-height: 1.5; font-size: 0.95rem; color: #1e293b; }
+        .final-card { background: #e6f7e6; border-left-color: #28a745; }
+        .loader { display: inline-block; width: 20px; height: 20px; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .meta-info { font-size: 0.85rem; color: #5b6e8c; text-align: right; margin-top: 1rem; }
+        footer { text-align: center; margin-top: 2rem; font-size: 0.8rem; color: #6c7a91; }
+        ul { margin: 0.5rem 0; padding-left: 1.5rem; }
+        li { margin: 0.25rem 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1><span>🏢</span> Orchestrator‑Worker <span style="font-size: 1.5rem;">|</span> <span>🌏</span></h1>
+        <p>Decompose → Specialists → Synthesize → Your perfect itinerary</p>
+    </div>
+    <div class="card">
+        <div class="form-group">
+            <label>✍️ Describe your dream trip</label>
+            <textarea id="query" rows="4" placeholder="e.g., Plan a 5-day romantic trip to Goa in December with a budget of ₹50,000"></textarea>
+        </div>
+        <button id="runBtn">✨ Plan My Trip (Orchestrator‑Worker)</button>
+        <div id="resultContainer" class="result-area"></div>
+    </div>
+    <footer>Agentic AI • Orchestrator‑Worker (Hospitality) • Mock specialists</footer>
+</div>
+
+<script>
+    const API_URL = "https://ai-orchestrator-worker.onrender.com/orchestrate";
+
+    function renderMarkdown(text) {
+        // Escape HTML first to prevent injection
+        let html = escapeHtml(text);
+        // Convert **bold** to <strong>
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Convert bullet lines starting with * or - to <li>
+        html = html.replace(/^[\*\-]\s+(.*)$/gm, '<li>$1</li>');
+        // Wrap consecutive <li> elements in <ul>
+        html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+        // Convert line breaks
+        html = html.replace(/\n/g, '<br>');
+        return html;
+    }
+
+    async function runOrchestrator() {
+        const query = document.getElementById('query').value.trim();
+        if (!query) {
+            alert("Please describe your trip.");
+            return;
+        }
+
+        const resultDiv = document.getElementById('resultContainer');
+        resultDiv.innerHTML = `<div class="result-card"><div class="loader"></div> Orchestrator planning...</div>`;
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Server error (${response.status}): ${errorText.slice(0, 100)}`);
+            }
+            const data = await response.json();
+
+            let html = `<div class="result-card final-card">
+                            <strong>✅ Final Itinerary</strong><br>
+                            <div style="margin-top: 0.5rem;">${renderMarkdown(data.final_answer)}</div>
+                        </div>`;
+            html += `<div class="meta-info">⏱️ Total time: ${data.elapsed_time.toFixed(2)} seconds</div>`;
+            html += `<div><strong>📋 Orchestration Steps:</strong></div>`;
+            data.steps.forEach(step => {
+                html += `<div class="step">
+                            <div class="step-title">${escapeHtml(step.step)}</div>
+                            <div class="step-content">${escapeHtml(step.output)}</div>
+                         </div>`;
+            });
+            resultDiv.innerHTML = html;
+        } catch (error) {
+            console.error(error);
+            resultDiv.innerHTML = `<div class="result-card" style="border-left-color: red;"><strong>❌ Error</strong><br>${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    document.getElementById('runBtn').addEventListener('click', runOrchestrator);
+</script>
+</body>
+</html>
